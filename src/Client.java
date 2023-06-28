@@ -1,98 +1,104 @@
 // import packages for java library 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.util.Date;
-
+import java.io.*;
+import java.net.*;
+import java.util.*;
 /*
 Project Description: This project requires students to implement an iterative (single-threaded) server for use in a client-server configuration to examine, analyze, and study the effects an iterative server has on the efficiency (average turn-around time) of processing client requests.
 By: Christopher Clark
 
 */
-public class Client {
-    public static void main(String[] args) {
-        int portNumber = 4444;
-        try {
-            ServerSocket serverSocket = new ServerSocket(portNumber);
-            System.out.println("Iterative server started on port" + portNumber);
-            
-            while(true) {
-                Socket clientSocket = serverSocket.accept();
-                System.out.println("Accepted connection from " + clientSocket.getInetAddress());
-                
-                PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
-                BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
-                String inputLine;
-                while ((inputLine = in.readLine()) != null) {
-                    String outputLine = "";
-                    switch (inputLine) {
-                        case "date":
-                            outputLine = new Date().toString();
-                            break;
-                        case "uptime":
-                            outputLine = getUptime();
-                            break;
-                        case "memory":
-                            outputLine = getMemoryUsage();
-                            break;
-                        case "netstat":
-                            outputLine = getNetstat();
-                            break;
-                        case "users":
-                            outputLine = getCurrentUsers();
-                            break;
-                        case "processes":
-                            outputLine = getRunningProcesses();
-                            break;
-                        default:
-                            outputLine = "Invalid request";
-                    }
-                    out.println(outputLine);
-                }
-                
-                // close the connection
-                out.close();
-                in.close();
-                clientSocket.close();
+public class Client {
+    private static final String[] OPERATIONS = {"date", "uptime", "memory", "netstat", "users", "processes"};
+    private static final int[] REQUEST_COUNTS = {1, 5, 10, 15, 20, 25};
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+
+        // Get server address and port
+        System.out.print("Enter server address: ");
+        String serverAddress = scanner.nextLine();
+        System.out.print("Enter server port: ");
+        int serverPort = scanner.nextInt();
+        scanner.nextLine();
+
+        // Display available operations
+        for (int i = 0; i < OPERATIONS.length; i++) {
+            System.out.printf("%d. %s%n", i + 1, OPERATIONS[i]);
+        }
+        System.out.print("\nEnter operation number: ");
+        int operationNumber = scanner.nextInt();
+
+        // Display available request counts
+        for (int i = 0; i < REQUEST_COUNTS.length; i++) {
+            System.out.printf("%d. %d%n", i + 1, REQUEST_COUNTS[i]);
+        }
+        System.out.print("\nEnter request count number: ");
+        int requestCountNumber = scanner.nextInt();
+
+        // Create and start client threads
+        List<ClientThread> clientThreads = new ArrayList<>();
+        for (int i = 0; i < REQUEST_COUNTS[requestCountNumber - 1]; i++) {
+            ClientThread clientThread = new ClientThread(serverAddress, serverPort, OPERATIONS[operationNumber - 1]);
+            clientThread.start();
+            clientThreads.add(clientThread);
+        }
+
+        // Wait for all threads to finish and calculate total and average turnaround time
+        long totalTurnaroundTime = 0;
+        for (ClientThread clientThread : clientThreads) {
+            try {
+                clientThread.join();
+                totalTurnaroundTime += clientThread.getTurnaroundTime();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
-       
-        } catch (IOException e) {
-            System.err.println("Could'nt listen on port " + portNumber);
-            System.exit(1);
+        }
+        double averageTurnaroundTime = (double) totalTurnaroundTime / REQUEST_COUNTS[requestCountNumber - 1];
+
+        System.out.printf("%nTotal turnaround time: %d ms%n", totalTurnaroundTime);
+        System.out.printf("Average turnaround time: %.2f ms%n", averageTurnaroundTime);
+    }
+
+    private static class ClientThread extends Thread {
+        private final String serverAddress;
+        private final int serverPort;
+        private final String operation;
+        private long turnaroundTime;
+
+        public ClientThread(String serverAddress, int serverPort, String operation) {
+            this.serverAddress = serverAddress;
+            this.serverPort = serverPort;
+            this.operation = operation;
+        }
+
+        public long getTurnaroundTime() {
+            return turnaroundTime;
+        }
+
+        @Override
+        public void run() {
+            try (Socket socket = new Socket(serverAddress, serverPort);
+                 PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+
+                // Send operation to server
+                long startTime = System.currentTimeMillis();
+                out.println(operation);
+
+                // Receive response from server
+                String response = in.readLine();
+                long endTime = System.currentTimeMillis();
+
+                turnaroundTime = endTime - startTime;
+
+                System.out.printf("Response from server: %s (turnaround time: %d ms)%n", response, turnaroundTime);
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
-
-    // create functions getUptime, getMemoryUsage, getNetstat, getCurrentUsers, getRunningProcesses
-    private static String getUptime() {
-        // TDO: Implement uptime functionality here 
-        return "uptime functionality not implemented yet";
-    }
-
-    private static String getMemoryUsage() {
-        // TDO: Implement memory usage functionality here 
-        return "memory usage functionality not implemented yet";
-    }
-
-    private static String getNetstat() {
-        // TDO: Implement netstat functionality here 
-        return "netstat functionality not implemented yet";
-    }
-
-    private static String getCurrentUsers() {
-        // TDO: Implement current users functionality here 
-        return "current users functionality not implemented yet";
-    }
-
-    private static String getRunningProcesses() {
-        // TDO: Implement running processes functionality here 
-        return "running processes functionality not implemented yet";
-    }
-
-    
 }
 
 
