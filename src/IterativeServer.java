@@ -1,134 +1,105 @@
-import java.io.*; // import packages for java library 
+import java.io.*;
 import java.net.*;
-import java.util.*;
+import java.util.Date;
+import java.util.Scanner;
 
-/*
-Project Description: This project requires students to implement an iterative (single-threaded) server for use in a client-server configuration to examine, analyze, and study the effects an iterative server has on the efficiency (average turn-around time) of processing client requests.
-By: Christopher Clark
-
-*/
-
-// start of class IterativeServer
 public class IterativeServer {
-    // The constants representing the operations & request counts
-    private static final String[] OPERATIONS = {"Date and Time", "Uptime", "Memory Use", "Netstat", "Current Users", "Running Processes"};
-    private static final int[] REQUEST_COUNTS = {1, 5, 10, 15, 20, 25};
 
-    public static void main(String[] args) {
-         // Create scanner for user input
-        Scanner scanner = new Scanner(System.in);
+	public static void main(String[] args) {
+		//scanner created to get port number from user
+		Scanner scanner = new Scanner(System.in);
+		int port = scanner.nextInt();
+		//socket server created from that port
+		try (ServerSocket serverSocket = new ServerSocket(port)) {
 
-         // Get server address & port from user
-        String serverAddress = getInput(scanner, "Enter server address: ");
-        int serverPort = Integer.parseInt(getInput(scanner, "Enter server port: "));
+			System.out.println("Server is on port " + port);
 
-        // Display available operations & get selected operation from user
-        printOptions("\nOperations:", OPERATIONS);
-        int operationNumber = Integer.parseInt(getInput(scanner, "\nEnter operation number: "));
-        
-        // Display available request counts & get selected request count from user
-        printOptions("\nRequest counts:", REQUEST_COUNTS);
-        int requestCountNumber = Integer.parseInt(getInput(scanner, "\nEnter request count number: "));
+			while (true) {
+				//server connects to the client
+				Socket socket = serverSocket.accept();
+				System.out.println("Client is connected");
 
-         // Create & start request threads
-        List<RequestThread> requestThreads = createAndStartThreads(REQUEST_COUNTS[requestCountNumber - 1], serverAddress, serverPort, OPERATIONS[operationNumber - 1]);
-        
-        // Calc & print turnaround times
-        calculateAndPrintTurnaroundTime(requestThreads, REQUEST_COUNTS[requestCountNumber - 1]);
-    }
+				//reader is formed to output to client
+				BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+				//writer made to output the results to client
+				PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
 
-    // Method to retrieve user input with a prompt message
-    private static String getInput(Scanner scanner, String message) {
-        System.out.print(message);
-        return scanner.nextLine();
-    }
+				// list of available commands are output to the client
+				writer.println("Available options:");
+				writer.println("1. Date and Time");
+				writer.println("2. Uptime");
+				writer.println("3. Memory Use");
+				writer.println("4. Netstat");
+				writer.println("5. Current Users");
+				writer.println("6. Running Processes");
+				writer.println("Please enter your choice:");
 
-    // Method to print available options for String arrays
-    private static void printOptions(String message, String[] options) {
-        System.out.println(message);
-        for (int i = 0; i < options.length; i++) {
-            System.out.printf("%d. %s%n", i + 1, options[i]);
-        }
-    }
+				//Server reads what the client picks
+				int choice = Integer.parseInt(reader.readLine());
+				writer.println("Enter how many times command should be run: 1, 5, 10, 15, 20, 25");
+				int amount = Integer.parseInt(reader.readLine());
+				String response;
 
-    // Method to print available options for int arrays
-    private static void printOptions(String message, int[] options) {
-        System.out.println(message);
-        for (int i = 0; i < options.length; i++) {
-            System.out.printf("%d. %d%n", i + 1, options[i]);
-        }
-    }
+				// clients choice is run the amount of times they selected
+				for(int i =0; i <= amount; i++) 
+				{
+					switch (choice) {
+					case 1:
+						response = executeCommand("date");
+						break;
+					case 2:
+						response = executeCommand("uptime");
+						break;
+					case 3:
+						response = executeCommand("free -h");
+						break;
+					case 4:
+						response = executeCommand("netstat");
+						break;
+					case 5:
+						response = executeCommand("who");
+						break;
+					case 6:
+						response = executeCommand("ps aux");
+						break;
+					default:
+						response = "Invalid option";
+					}
 
-    // Method to create, start and return a list of request threads
-    private static List<RequestThread> createAndStartThreads(int count, String serverAddress, int serverPort, String operation) {
-        List<RequestThread> requestThreads = new ArrayList<>();
-        for (int i = 0; i < count; i++) {
-            RequestThread requestThread = new RequestThread(serverAddress, serverPort, operation);
-            requestThread.start();
-            requestThreads.add(requestThread);
-        }
-        return requestThreads;
-    }
-    
-    // Method to calcu & print total/average turnaround time
-    private static void calculateAndPrintTurnaroundTime(List<RequestThread> requestThreads, int count) {
-        long totalTurnaroundTime = requestThreads.stream().mapToLong(RequestThread::getTurnaroundTime).sum();
-        double averageTurnaroundTime = (double) totalTurnaroundTime / count;
+					// Send the response back to the client
+					writer.println(response);
 
-        System.out.printf("%nTotal turnaround time: %d ms%n", totalTurnaroundTime);
-        System.out.printf("Average turnaround time: %.2f ms%n", averageTurnaroundTime);
-    }
+					reader.close();
+					writer.close();
+					socket.close();
 
-    // Inner class representing a request thread
-    private static class RequestThread extends Thread {
-        // Server address, port & operation for this request
-        private final String serverAddress;
-        private final int serverPort;
-        private final String operation;
-        private long turnaroundTime;  // Var to hold the turnaround time for the request
+				}
+			}
+		} catch (IOException ex) {
+			System.out.println("Server exception: " + ex.getMessage());
+			ex.printStackTrace();
+		}
+	}
+	//this method runs the selected command in the console
+	private static String executeCommand(String command) {
+		try {
+			long startTime = System.currentTimeMillis();
+			Process process = Runtime.getRuntime().exec(command);
+			BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
 
-         // Constructor
-        public RequestThread(String serverAddress, int serverPort, String operation) {
-            this.serverAddress = serverAddress;
-            this.serverPort = serverPort;
-            this.operation = operation;
-        }
-
-        // Method to get the turnaround time for the request
-        public long getTurnaroundTime() {
-            return turnaroundTime;
-        }
-
-        // Method that contains the logic executed by the thread
-        @Override
-        public void run() {
-            // Try to establish socket connection & streams
-            try (Socket socket = new Socket(serverAddress, serverPort);
-                 BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                 BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()))) {
-
-                // Record the start time of the request
-                long startTime = System.currentTimeMillis();
-               
-                // Send operation to the server
-                writer.write(operation);
-                writer.newLine();
-                writer.flush();
-
-                // Receive response from the server
-                String response = reader.readLine();
-
-                // Record the end time & calc turnaround time
-                long endTime = System.currentTimeMillis();
-                turnaroundTime = endTime - startTime;
-
-                // Print the server response & turnaround time
-                System.out.printf("Response from server: %s (turnaround time: %d ms)%n", response, turnaroundTime);
-            } catch (IOException e) {
-                e.printStackTrace(); // Print stack trace if a I/O error occurs
-            }
-        }
-    }
-}
-
-               
+			StringBuilder output = new StringBuilder();
+			String line;
+			while ((line = reader.readLine()) != null) {
+				output.append(line).append("\n");
+			}
+			long endTime = System.currentTimeMillis();
+			long turnAroundTime = endTime - startTime;
+			System.out.println("Response from Server:" + turnAroundTime);
+			reader.close();
+			return output.toString();
+		} catch (IOException e) {
+			e.printStackTrace();
+			return "Error executing command: " + e.getMessage();
+		}
+	}
+} 
