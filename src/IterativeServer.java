@@ -69,11 +69,12 @@ public class IterativeServer {
 					// Send the response back to the client
 					writer.println(response);
 
-					reader.close();
-					writer.close();
-					socket.close();
+					
 
 				}
+				reader.close(); // move the close statements to the end to fix the issue 
+				writer.close();
+				socket.close();
 			}
 		} catch (IOException ex) {
 			System.out.println("Server exception: " + ex.getMessage());

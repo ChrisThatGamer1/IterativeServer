@@ -84,7 +84,10 @@ public class Client {
 
                 // Send operation to server
                 long startTime = System.currentTimeMillis();
-                out.println(operation);
+                
+                int operationIndex = Arrays.asList(OPERATIONS).indexOf(operation);
+                out.println(operationIndex + 1);  // Addin 1 b/c server options start from 1 also hopes to avoid previous server error 
+
 
                 // Receive response from server
                 String response = in.readLine();
