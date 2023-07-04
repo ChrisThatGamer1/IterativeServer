@@ -1,7 +1,7 @@
-// import packages for java library 
 import java.io.*;
 import java.net.*;
 import java.util.*;
+
 /*
 Project Description: This project requires students to implement an iterative (single-threaded) server for use in a client-server configuration to examine, analyze, and study the effects an iterative server has on the efficiency (average turn-around time) of processing client requests.
 By: Christopher Clark
@@ -35,13 +35,19 @@ public class Client {
         }
         System.out.print("\nEnter request count number: ");
         int requestCountNumber = scanner.nextInt();
+        scanner.nextLine();
 
         // Create and start client threads
         List<ClientThread> clientThreads = new ArrayList<>();
         for (int i = 0; i < REQUEST_COUNTS[requestCountNumber - 1]; i++) {
-            ClientThread clientThread = new ClientThread(serverAddress, serverPort, OPERATIONS[operationNumber - 1]);
+            ClientThread clientThread = new ClientThread(serverAddress, serverPort, operationNumber, requestCountNumber);
             clientThread.start();
             clientThreads.add(clientThread);
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
 
         // Wait for all threads to finish and calculate total and average turnaround time
@@ -54,6 +60,7 @@ public class Client {
                 e.printStackTrace();
             }
         }
+
         double averageTurnaroundTime = (double) totalTurnaroundTime / REQUEST_COUNTS[requestCountNumber - 1];
 
         System.out.printf("%nTotal turnaround time: %d ms%n", totalTurnaroundTime);
@@ -63,13 +70,15 @@ public class Client {
     private static class ClientThread extends Thread {
         private final String serverAddress;
         private final int serverPort;
-        private final String operation;
+        private final int operationNumber;
+        private final int requestCountNumber;
         private long turnaroundTime;
 
-        public ClientThread(String serverAddress, int serverPort, String operation) {
+        public ClientThread(String serverAddress, int serverPort, int operationNumber, int requestCountNumber) {
             this.serverAddress = serverAddress;
             this.serverPort = serverPort;
-            this.operation = operation;
+            this.operationNumber = operationNumber;
+            this.requestCountNumber = requestCountNumber;
         }
 
         public long getTurnaroundTime() {
@@ -82,26 +91,22 @@ public class Client {
                  PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
                  BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
 
-                // Send operation to server
+                // Send operation number and request count number as separate values
+                out.println(operationNumber);
+                out.println(requestCountNumber);
+
                 long startTime = System.currentTimeMillis();
-                
-                int operationIndex = Arrays.asList(OPERATIONS).indexOf(operation);
-                out.println(operationIndex + 1);  // Addin 1 b/c server options start from 1 also hopes to avoid previous server error 
 
+                String response;
+                while ((response = in.readLine()) != null) {
+                    System.out.println(response);
+                }
 
-                // Receive response from server
-                String response = in.readLine();
                 long endTime = System.currentTimeMillis();
-
                 turnaroundTime = endTime - startTime;
-
-                System.out.printf("Response from server: %s (turnaround time: %d ms)%n", response, turnaroundTime);
-
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
     }
 }
-
-
