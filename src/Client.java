@@ -2,6 +2,16 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
+//imports for bar chart
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.data.category.DefaultCategoryDataset;
+import javax.swing.*;
+
+
+
 /*
 Project Description: This project requires students to implement an iterative (single-threaded) server for use in a client-server configuration to examine, analyze, and study the effects an iterative server has on the efficiency (average turn-around time) of processing client requests.
 By: Christopher Clark
@@ -14,6 +24,8 @@ public class Client {
 
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
+
+        List<Long> turnaroundTimes = new ArrayList<>();
 
         // Get server address and port
         System.out.print("Enter server address: ");
@@ -50,6 +62,19 @@ public class Client {
             }
         }
 
+         
+
+        for (ClientThread clientThread : clientThreads) {
+            try {
+                clientThread.join();
+                long turnaroundTime = clientThread.getTurnaroundTime();
+                turnaroundTimes.add(turnaroundTime);
+                long totalTurnaroundTime = turnaroundTime;
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
         // Wait for all threads to finish and calculate total and average turnaround time
         long totalTurnaroundTime = 0;
         for (ClientThread clientThread : clientThreads) {
@@ -65,9 +90,39 @@ public class Client {
 
         System.out.printf("%nTotal turnaround time: %d ms%n", totalTurnaroundTime);
         System.out.printf("Average turnaround time: %.2f ms%n", averageTurnaroundTime);
-    }
 
-    private static class ClientThread extends Thread {
+        // After averageTurnaroundTime is calculated
+        createBarChart(turnaroundTimes);
+
+        }
+
+    private static void createBarChart(List<Long> turnaroundTimes) {
+         SwingUtilities.invokeLater(() -> {
+            DefaultCategoryDataset dataset = new DefaultCategoryDataset();
+            for (int i = 0; i < turnaroundTimes.size(); i++) {
+                dataset.addValue(turnaroundTimes.get(i), "Turnaround Time", "Request " + (i + 1));
+            }
+
+            JFreeChart barChart = ChartFactory.createBarChart(
+                    "Client Request Turnaround Times",
+                    "Request",
+                    "Turnaround Time (ms)",
+                    dataset,
+                    PlotOrientation.VERTICAL,
+                    false, true, false);
+
+            ChartPanel chartPanel = new ChartPanel(barChart);
+            chartPanel.setPreferredSize(new java.awt.Dimension(560, 367));
+            JFrame frame = new JFrame();
+            frame.getContentPane().add(chartPanel);
+            frame.pack();
+            frame.setVisible(true);
+        });
+    }
+}
+    
+
+    class ClientThread extends Thread {
         private final String serverAddress;
         private final int serverPort;
         private final int operationNumber;
@@ -108,5 +163,30 @@ public class Client {
                 e.printStackTrace();
             }
         }
+
+         private static void createBarChart(List<Long> turnaroundTimes) {
+        SwingUtilities.invokeLater(() -> {
+            DefaultCategoryDataset dataset = new DefaultCategoryDataset();
+            for (int i = 0; i < turnaroundTimes.size(); i++) {
+                dataset.addValue(turnaroundTimes.get(i), "Turnaround Time", "Request " + (i + 1));
+            }
+
+            JFreeChart barChart = ChartFactory.createBarChart(
+                    "Client Request Turnaround Times",
+                    "Request",
+                    "Turnaround Time (ms)",
+                    dataset,
+                    PlotOrientation.VERTICAL,
+                    false, true, false);
+
+            ChartPanel chartPanel = new ChartPanel(barChart);
+            chartPanel.setPreferredSize(new java.awt.Dimension(560, 367));
+            JFrame frame = new JFrame();
+            frame.getContentPane().add(chartPanel);
+            frame.pack();
+            frame.setVisible(true);
+        });
     }
-}
+
+ }
+
