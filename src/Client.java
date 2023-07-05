@@ -2,14 +2,6 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
-//imports for bar chart
-import org.jfree.chart.ChartFactory;
-import org.jfree.chart.ChartPanel;
-import org.jfree.chart.JFreeChart;
-import org.jfree.chart.plot.PlotOrientation;
-import org.jfree.data.category.DefaultCategoryDataset;
-import javax.swing.*;
-
 
 
 /*
@@ -91,34 +83,8 @@ public class Client {
         System.out.printf("%nTotal turnaround time: %d ms%n", totalTurnaroundTime);
         System.out.printf("Average turnaround time: %.2f ms%n", averageTurnaroundTime);
 
-        // After averageTurnaroundTime is calculated
-        createBarChart(turnaroundTimes);
 
         }
-
-    private static void createBarChart(List<Long> turnaroundTimes) {
-         SwingUtilities.invokeLater(() -> {
-            DefaultCategoryDataset dataset = new DefaultCategoryDataset();
-            for (int i = 0; i < turnaroundTimes.size(); i++) {
-                dataset.addValue(turnaroundTimes.get(i), "Turnaround Time", "Request " + (i + 1));
-            }
-
-            JFreeChart barChart = ChartFactory.createBarChart(
-                    "Client Request Turnaround Times",
-                    "Request",
-                    "Turnaround Time (ms)",
-                    dataset,
-                    PlotOrientation.VERTICAL,
-                    false, true, false);
-
-            ChartPanel chartPanel = new ChartPanel(barChart);
-            chartPanel.setPreferredSize(new java.awt.Dimension(560, 367));
-            JFrame frame = new JFrame();
-            frame.getContentPane().add(chartPanel);
-            frame.pack();
-            frame.setVisible(true);
-        });
-    }
 }
     
 
@@ -163,30 +129,7 @@ public class Client {
                 e.printStackTrace();
             }
         }
-
-         private static void createBarChart(List<Long> turnaroundTimes) {
-        SwingUtilities.invokeLater(() -> {
-            DefaultCategoryDataset dataset = new DefaultCategoryDataset();
-            for (int i = 0; i < turnaroundTimes.size(); i++) {
-                dataset.addValue(turnaroundTimes.get(i), "Turnaround Time", "Request " + (i + 1));
-            }
-
-            JFreeChart barChart = ChartFactory.createBarChart(
-                    "Client Request Turnaround Times",
-                    "Request",
-                    "Turnaround Time (ms)",
-                    dataset,
-                    PlotOrientation.VERTICAL,
-                    false, true, false);
-
-            ChartPanel chartPanel = new ChartPanel(barChart);
-            chartPanel.setPreferredSize(new java.awt.Dimension(560, 367));
-            JFrame frame = new JFrame();
-            frame.getContentPane().add(chartPanel);
-            frame.pack();
-            frame.setVisible(true);
-        });
     }
 
- }
+ 
 
